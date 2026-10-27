@@ -1,0 +1,18 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Personal user backups & exported JSON files
+daylight-backup-*.json
+*.corrupt.txt
+
+# Local temporary files & node artifacts
+node_modules/
+dist/
+*.log

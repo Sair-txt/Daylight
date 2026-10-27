@@ -1,0 +1,25 @@
+{
+  "name": "Daylight",
+  "version": "1.2.1",
+  "archive": "Daylight-v1.2.1.zip",
+  "archiveSha256": "4e6b7bb6e7038f98809f23cc7c944459cd90391d6d5c40837b143fe25414b67d",
+  "archiveBytes": 49845,
+  "buildTime": "2026-10-27T12:01:11.572Z",
+  "files": [
+    {
+      "path": "Daylight-v1.2.1/index.html",
+      "bytes": 232701,
+      "sha256": "ef8b17360584c448383b814183039cc89662d99e745f6d1c7bdd67dc2e28125d"
+    },
+    {
+      "path": "Daylight-v1.2.1/README.md",
+      "bytes": 12359,
+      "sha256": "c6477aef299bb60657bf8cb5f0ca9ad2eb82beb8b26d3585bca067d593388380"
+    },
+    {
+      "path": "Daylight-v1.2.1/LICENSE",
+      "bytes": 1078,
+      "sha256": "310adc408b146d48ea193e8427ccedefbe418f0303990c7803614d035e952eda"
+    }
+  ]
+}

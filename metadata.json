@@ -1,0 +1,6 @@
+{
+  "name": "Daylight",
+  "description": "A calm, minimal, Apple-inspired personal life dashboard with Zen and Dō views, offline-capable and privacy-first.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

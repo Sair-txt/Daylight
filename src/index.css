@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #F5F4F0;
+  --surface: #FFFFFF;
+  --surface-elevated: #FAF9F5;
+  --surface-active: #EFEFE9;
+  --text: #292A28;
+  --text-muted: #777771;
+  --text-subtle: #999992;
+  --border: #E8E6DF;
+  --border-subtle: #F0EEE8;
+  --accent: #718675;
+  --accent-hover: #5F7363;
+  --accent-soft: rgba(113, 134, 117, 0.12);
+  --accent-soft-hover: rgba(113, 134, 117, 0.2);
+  --danger: #b33939;
+  --danger-soft: rgba(179, 57, 57, 0.1);
+  --success: #2e7d32;
+  --success-soft: rgba(46, 125, 50, 0.1);
+  --warning: #d97706;
+  --warning-soft: rgba(217, 119, 6, 0.1);
+}
+
+[data-theme="dark"] {
+  --bg: #141514;
+  --surface: #1E1F1E;
+  --surface-elevated: #262725;
+  --surface-active: #2F312E;
+  --text: #ECECE6;
+  --text-muted: #A3A39B;
+  --text-subtle: #75756E;
+  --border: #2F312E;
+  --border-subtle: #252724;
+  --accent: #8FA893;
+  --accent-hover: #A3BCA6;
+  --accent-soft: rgba(143, 168, 147, 0.16);
+  --accent-soft-hover: rgba(143, 168, 147, 0.26);
+  --danger: #e57373;
+  --danger-soft: rgba(229, 115, 115, 0.16);
+  --success: #81c784;
+  --success-soft: rgba(129, 199, 132, 0.16);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.16);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}

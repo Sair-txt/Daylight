@@ -1,0 +1,696 @@
+# DAYLIGHT v1.2.0 — MASTER PRODUCT REPAIR, CUSTOMIZATION & POLISH PROMPT
+
+## 1. Mission and role
+
+You are the senior product designer, frontend engineer, software architect, accessibility specialist, data-integrity engineer, QA engineer, and release engineer responsible for bringing Daylight to its next high-quality release.
+
+You are working on an existing application. Do not rebuild it from scratch, discard working features, or deliver merely a plan, mockup, or code snippets.
+
+**Inspect the real project, repair the existing functionality, implement the requested improvements, test the actual application, and package the updated release.**
+
+Work autonomously. Do not ask clarifying questions. Make safe, sensible decisions consistent with the original Daylight specifications and document important trade-offs.
+
+The product must retain its calm, private, local-first identity and its self-contained offline release.
+
+## 2. Inputs and source-of-truth requirements
+
+Inspect the latest project ZIP and read both original specifications if available:
+
+- `Daylight_One_Shot_Master_Prompt.md`
+- `Daylight_Product_and_Engineering_Specification.md`
+
+The current ZIP contains multiple implementations, including:
+
+- Root React/TypeScript interface in `src/App.tsx`.
+- Standalone application source under `daylight/src/`.
+- Generated standalone release in `daylight/index.html`.
+- A production build script under `daylight/scripts/build.js`.
+- Root-level development tooling, dependencies, documentation, and release archives.
+
+Do not assume that improving the standalone app also fixes the React preview.
+
+First determine which application entry point the current development environment actually displays. Then ensure all user-facing functionality works in that interface and in the published standalone application.
+
+Prefer one canonical source of business logic and one reproducible production build. If the React preview remains in use, either make it load the canonical application or bring it to functional parity and test it explicitly.
+
+Do not leave features working in one implementation but broken or absent in the other.
+
+Preserve the existing useful accent-color picker, sage defaults, Zen greeting, contrast improvements, task hierarchy, finance calculations, storage recovery, validated backup/restore, and release-integrity work.
+
+## 3. Critical priority: Repair all delete buttons
+
+The user's reported issue is that none of the delete buttons work.
+
+Audit every delete action in both implementations. Do not assume that the problem is limited to one module or one button.
+
+The React preview uses native `confirm()` dialogs throughout the application, while the milestone-add flow uses native `prompt()`. These browser-native dialogs can fail or be suppressed in embedded preview environments.
+
+Replace native confirmation and prompt dependencies with reliable, app-owned accessible dialogs and forms.
+
+### Delete requirements
+
+Implement and verify deletion for:
+
+- Tasks and subtasks.
+- Projects.
+- Calendar events.
+- Habits and their associated completion history.
+- Goals and their milestones.
+- Individual milestones.
+- Notes.
+- Journal entries.
+- Finance transactions.
+- Budgets where a deletion action is provided.
+- Full application reset, behind its separate destructive confirmation.
+
+Each delete control must have an accessible name and a genuine working action.
+
+The interaction must follow this sequence:
+
+1. User activates Delete.
+2. Daylight opens a visible confirmation dialog.
+3. The dialog identifies the record and explains any important consequences.
+4. Cancel closes the dialog without changing anything.
+5. Confirm performs the correct deletion through the canonical data layer.
+6. The interface refreshes and accurately reflects the new state.
+7. Persistent success is announced only if the save actually succeeds.
+
+Use proper modal/dialog semantics, keyboard support, Escape handling, focus containment, and focus restoration.
+
+Do not use native `confirm()` or `prompt()` as the only confirmation or input mechanism.
+
+### Related-record rules
+
+Follow the established product specification:
+
+- Deleting a parent task must explicitly offer deleting its subtasks or preserving them as independent tasks.
+- Deleting a project must preserve its tasks, unassigning them from the project.
+- Deleting a habit must confirm that associated history will also be removed.
+- Deleting a goal must remove its milestones while preserving unrelated tasks.
+- Deleting an individual milestone must remove only that milestone.
+- Deleting a note, journal entry, event, or transaction must not affect unrelated records.
+- Destructive operations must clean up stale references predictably.
+
+If persistence fails, do not falsely report success. Preserve existing valid data where possible, and display the persistent storage warning when the operation cannot be safely committed.
+
+## 4. Priority: Make notes editable after saving
+
+The React preview currently renders notes with pin and delete actions but no visible Edit action. Editing state exists without a complete editing workflow.
+
+Implement the full note-editing behavior in the active preview and standalone release.
+
+### Requirements
+
+Every note should support:
+
+- Create.
+- View.
+- Edit.
+- Save changes.
+- Pin and unpin.
+- Search.
+- Delete.
+
+Add a clearly recognizable, accessible Edit button to each note card.
+
+Clicking Edit must open a form populated with the existing note title, body, and pin state.
+
+Saving must update the existing record, preserving its stable ID and original creation timestamp while updating its modification timestamp.
+
+The updated note must immediately appear in the rendered note list and remain available after reload when storage works.
+
+Validate that a note has a title or nonempty body.
+
+Warn before discarding unsaved changes.
+
+Do not duplicate an existing note when editing it.
+
+Preserve safe text rendering. Notes must remain plain text and must never be interpreted as HTML.
+
+Keep search and pin ordering functional after edits.
+
+## 5. Priority: Complete calendar event editing
+
+The React preview currently offers a create-event form and event deletion but lacks a complete event-edit workflow.
+
+Implement full create, view, edit, and delete functionality.
+
+### Event list and calendar interactions
+
+Provide an accessible Edit action for each event in the agenda.
+
+Calendar event entries should also open the relevant event for viewing or editing.
+
+### Event editor
+
+The form must support:
+
+- Event title.
+- Date.
+- All-day versus timed event.
+- Start time.
+- End time.
+- Optional notes.
+
+When editing an event, prepopulate every field using that event's current data.
+
+Saving must update the existing event rather than inserting a duplicate.
+
+Preserve the record ID and creation timestamp, and update the modification timestamp.
+
+Validate all required fields and ensure the end time does not precede the start time when both times are present.
+
+For all-day events, store the date-only value consistently and do not reinterpret the date through UTC.
+
+For timed events, maintain the established local date/time behavior consistently across the calendar and agenda.
+
+After editing, update the calendar, agenda, next-event display, and relevant overview views from the same canonical state.
+
+Do not imply external calendar synchronization.
+
+## 6. Priority: Fix the Add Milestone button
+
+The Add Milestone control currently relies on `prompt('Milestone title:')` in the React preview. This is not a robust interaction in an embedded application.
+
+Replace it with a proper Daylight modal form.
+
+### Required behavior
+
+Clicking Add Milestone must reliably open a modal associated with the correct goal.
+
+The form should support:
+
+- Milestone title, required.
+- Optional target date.
+- Save and Cancel actions.
+- Inline validation.
+- Keyboard navigation and visible focus.
+- Safe dismissal.
+- Honest save feedback.
+
+Submitting a valid milestone must create a record linked to the selected goal, render it immediately, and update the goal's derived progress.
+
+Canceling must leave the goal unchanged.
+
+Prevent repeated clicks or duplicate submissions from creating duplicate milestones.
+
+Complete the milestone CRUD workflow: create, edit, complete/reopen, and delete. Add a clearly labeled edit action for existing milestones.
+
+Goals should also support create, edit, and delete as specified by the product specification.
+
+Keep progress derived from completed milestones divided by total milestones. For goals without milestones, display status rather than an invented percentage.
+
+Do not use native browser prompts or alerts as the only mechanism for these workflows.
+
+## 7. Priority: Add selectable habit schedules
+
+Habit recurrence currently provides Daily and Weekdays choices only, despite the data model already having a `scheduledDays` array.
+
+Extend the scheduling interface so users can choose individual weekdays.
+
+### Schedule options
+
+Support:
+
+1. Every day.
+2. Weekdays, Monday through Friday.
+3. Custom days, individually selectable from Sunday through Saturday.
+
+A weekend shortcut may be provided if useful, but it must resolve to an explicit scheduled-day configuration and must not replace custom selection.
+
+When Custom is selected, show seven labeled day controls.
+
+Users must be able to select combinations such as Monday, Wednesday, and Friday, or any other valid combination.
+
+The weekday controls must be accessible by keyboard and have clear selected and unselected states.
+
+A custom schedule must contain at least one selected day. Show inline validation rather than silently creating an invalid schedule.
+
+### Canonical recurrence model
+
+Use a clearly documented representation, for example:
+
+- `recurrence`: `daily`, `weekdays`, or `custom`.
+- `scheduledDays`: weekday indices from 0 through 6, with 0 representing Sunday.
+
+The representation must be consistent across the preview, standalone implementation, schema validator, habit logic, storage, and backup format.
+
+When editing a habit, restore its saved schedule correctly.
+
+Do not erase previous habit entries when changing the schedule.
+
+### Backward compatibility
+
+Existing habits must remain valid.
+
+Normalize older records deliberately:
+
+- Existing daily habits map to all seven days.
+- Existing weekday habits map to Monday through Friday.
+- Valid existing `scheduledDays` values are preserved where appropriate.
+
+Do not reset the dataset or invent history during migration.
+
+### Habit history and streaks
+
+Make the recent-history controls reflect the actual schedule.
+
+Only scheduled days count when calculating streaks. Unscheduled days must never count as failures.
+
+Allow historical completion to be changed without altering unrelated entries.
+
+Test schedule changes, dates at week and year boundaries, and backward compatibility with existing saved data.
+
+## 8. Priority: Support BDT (Bangladeshi Taka)
+
+Add BDT as an explicit finance currency option in Settings.
+
+The built-in USD default must remain unchanged. Never infer currency from the user's location.
+
+### Currency configuration
+
+In the canonical currency configuration, add:
+
+- Code: `BDT`.
+- Name: `Bangladeshi Taka`.
+- Display symbol: `৳`.
+- Decimal places: 2.
+- Minor-unit factor: 100.
+
+BDT must be accepted by the schema validator and supported by all currency-related UI controls.
+
+Display it clearly as `BDT (৳)` in the currency selector.
+
+### Correct currency formatting generally
+
+The React preview currently formats every currency by dividing the amount by 100 and forcing two decimal places. That is incorrect for zero-decimal currencies such as JPY.
+
+Fix this beyond BDT alone.
+
+Use one consistent currency-aware utility for:
+
+- Converting decimal input into integer minor units.
+- Formatting amounts for display.
+- Converting minor units back to editable decimal strings.
+- Calculating income and expenses.
+- Calculating net totals.
+- Calculating category totals and budgets.
+
+Use `Intl.NumberFormat` appropriately while ensuring that currency-specific decimal handling remains correct.
+
+Preserve integer minor-unit arithmetic wherever applicable.
+
+Test BDT, USD, and JPY explicitly, along with the other supported currencies.
+
+Changing the application-wide currency setting must not silently convert stored amounts. Explain that the selected currency controls the interpretation and display of manually entered transactions and budgets. If existing records are present, provide a clear warning or confirmation before changing the global currency.
+
+Preserve historical transactions and budgets during currency changes.
+
+## 9. Product logo: Minimal sun mark
+
+Replace the current letter-D logo with a minimal, recognizable sun-shaped mark.
+
+Create it using inline SVG or a lightweight CSS shape. Do not use downloaded images, external icon libraries, or emoji.
+
+### Design direction
+
+The mark should have:
+
+- A small central circle.
+- Simple, evenly spaced rays.
+- Balanced line weight.
+- Clean geometry.
+- A monochrome appearance using `currentColor` or a theme-appropriate foreground.
+- Good legibility at small sizes.
+- Appropriate contrast in light and dark themes.
+
+Avoid gradients, elaborate illustrations, detailed textures, or an oversized badge.
+
+Use the same logo consistently in the main header and other appropriate app branding locations.
+
+The app name should remain clearly visible next to the mark.
+
+Give the logo a suitable accessible name where it is interactive, and mark purely decorative SVG content as hidden from assistive technology.
+
+Preserve the overall calm Daylight aesthetic.
+
+## 10. Make the top-left Daylight brand return to overview
+
+Make the brand/logo area an actual accessible button.
+
+When the user is in Dō mode and clicks the logo or Daylight brand, navigate to the Dō Today/Overview section.
+
+This action must not switch to Zen unless the user explicitly selects Zen.
+
+If the user is already on Today, return focus or scroll the primary content area to the top where appropriate.
+
+If the mobile sidebar is open, close the drawer after navigation.
+
+Do not alter, duplicate, or reset any records.
+
+The logo should have visible hover and keyboard focus states.
+
+The button must work using keyboard activation as well as mouse or touch.
+
+Test brand navigation from every Dō module.
+
+## 11. Replace all user-interface emojis with monochrome icons
+
+Scan both implementations and the complete rendered UI for emoji usage.
+
+Replace emoji-based visual indicators with consistent minimal, monochrome line icons or simple symbols.
+
+Examples include:
+
+- Calendar emojis next to dates.
+- Folder emojis beside projects.
+- Fire emojis for habit streaks.
+- Pin emojis for pinned notes.
+- Any emoji used as navigation, status, branding, empty-state decoration, or button content.
+
+Use existing Lucide icons in the React preview where appropriate and inline SVG paths in the standalone application.
+
+Create a small consistent icon vocabulary with uniform stroke width, sizes, alignment, and visual weight.
+
+Use `currentColor` so icons adapt to the active theme.
+
+Do not replace each emoji with a colorful external image. Do not add an icon CDN or any network dependency.
+
+Every icon-only button must have a meaningful accessible name.
+
+Preserve semantic distinctions through labels and text instead of depending on color alone.
+
+The resulting interface should feel calm, clean, minimal, and consistent.
+
+## 12. Recreate the translucent Dō sidebar inspired by the reference image
+
+Use the attached Zen Browser screenshot as a visual reference for the sidebar treatment, not as an instruction to copy the browser's branding or exact interface.
+
+The desired effect is a dark or theme-appropriate translucent panel, with the underlying surface softly blurred through it.
+
+Implement a restrained glass-like sidebar in Dō mode.
+
+### Visual properties
+
+Use native CSS properties, including:
+
+- A semi-transparent, theme-aware background.
+- `backdrop-filter: blur(...) saturate(...)`.
+- `-webkit-backdrop-filter` where appropriate.
+- A subtle border.
+- Minimal shadowing.
+- Restrained hover and selected-navigation surfaces.
+- Clean, monochrome icons.
+- Readable labels and a clear active-section indicator.
+
+Use CSS variables so the treatment respects the existing light/dark themes and custom accent color.
+
+A reasonable starting blur is approximately 18–24 pixels, adjusted based on the actual interface.
+
+### Make the blur visible
+
+Backdrop blur only affects content behind the panel.
+
+Ensure that the sidebar has a genuine visual backdrop, whether through the existing main canvas or a restrained CSS-only background layer.
+
+Do not add remote images or a large decorative background merely to make the blur visible.
+
+The sidebar must remain part of the existing layout without hiding the main content or blocking controls.
+
+### Fallback and accessibility
+
+Provide a solid or appropriately opaque theme surface when backdrop-filter is unavailable.
+
+Check text and icon contrast under the translucency effect. Preserve legibility in both light and dark themes.
+
+Respect reduced-motion settings.
+
+On mobile, maintain a functional drawer, predictable opening and closing behavior, usable touch targets, and clear focus handling.
+
+Do not sacrifice usability or performance for the visual effect.
+
+## 13. Additional issues discovered during the review
+
+Correct these while implementing the requested changes.
+
+### 13.1 Eliminate feature drift between the React preview and standalone app
+
+The two implementations currently differ in working interactions. For example, the React preview lacks note and event edit actions that exist in the standalone implementation.
+
+Choose one canonical application and ensure that all user-facing functionality remains consistent.
+
+Do not declare success merely because a feature has been added to `daylight/src/app.js` if the React preview is still the interface the user runs.
+
+If the React preview is retained, it must also have functioning forms, dialogs, delete operations, and persistence behavior.
+
+Do not maintain separate competing copies of application state.
+
+### 13.2 Fix the React preview's data-safety shortcomings
+
+The React preview directly writes to `localStorage` from `updateState()` and applies state changes even when a write fails. Its import handler performs only shallow checks rather than the full schema validation required for backups.
+
+Align both implementations with the established canonical storage and data-integrity behavior.
+
+Requirements:
+
+- All storage access goes through a central data service.
+- Validate complete candidate state before committing it.
+- Handle storage property access exceptions, blocked storage, and quota failures.
+- Display persistent memory-only warnings when appropriate.
+- Never claim persistence succeeded when it failed.
+- Validate imported schema versions, every supported collection, IDs, dates, enum values, and relationships.
+- Preserve valid existing state when an import or restore fails.
+- Preserve malformed original payloads for recovery rather than silently overwriting them.
+- Make restore and reset transactional.
+- Update the rendered interface only after the relevant state operation has completed according to its documented persistence semantics.
+
+Preserve all existing transactional restore/reset protections.
+
+### 13.3 Repair the stale release link
+
+The React preview header currently points at a v1.1.0 ZIP even though the project contains newer v1.1.2 release artifacts.
+
+Update all visible release links and labels to point at the correct current version.
+
+Use a single documented version source wherever practical. Do not hardcode an outdated version in one location while generating a different version elsewhere.
+
+Verify that every displayed download link actually resolves to the intended artifact.
+
+### 13.4 Keep the release build trustworthy
+
+Retain the standalone esbuild bundling process and classic-script syntax validation.
+
+Update the build as needed so the generated release includes all current functionality.
+
+Never overwrite historical release archives during ordinary builds.
+
+Use an explicit new release version after inspecting existing versions. Version 1.2.0 is the intended next target for this feature set if no later release already exists.
+
+Do not overwrite an existing versioned ZIP.
+
+The production HTML must remain self-contained and usable through the intended double-click workflow.
+
+## 14. UI fit and finish
+
+Improve the quality of interaction without replacing the entire design.
+
+Standardize:
+
+- Button sizes, icon alignment, and spacing.
+- Form labels and validation feedback.
+- Modal headings, padding, and action placement.
+- Delete confirmation styling.
+- Save and failure feedback.
+- Empty-state layout and wording.
+- Hover, pressed, disabled, and focus-visible states.
+- Responsive behavior.
+- Sidebar active and inactive appearances.
+- Text contrast in light and dark themes.
+
+Remove native `alert()` dependencies for ordinary form validation and user feedback where a consistent in-app message can provide a better experience.
+
+Do not use a notification that disappears quickly for an unresolved storage error.
+
+Respect reduced motion, keyboard focus, and screen-reader status announcements.
+
+Maintain the previous requirements for a calm, warm, restrained, Apple-inspired visual direction without copying proprietary assets or exact product screens.
+
+## 15. Automated test requirements
+
+Run the existing tests after installing the project's documented dependencies.
+
+Begin with:
+
+`npm ci`
+
+Then run:
+
+`npm test`
+
+Rerun any release or build tests that were previously blocked by missing dependencies.
+
+Add meaningful regression tests against the actual application logic and rendered interface.
+
+### Delete tests
+
+For every deletable entity type, verify:
+
+1. Clicking Delete opens an app-owned confirmation.
+2. Cancel does not change data.
+3. Confirm removes exactly the intended record.
+4. Related records follow the documented deletion policy.
+5. The UI updates correctly.
+6. Successful persistence is reported honestly.
+7. Failed persistence does not silently destroy existing valid data.
+8. Keyboard interaction works.
+
+### Note tests
+
+Verify create, edit, pin/unpin, search, save, reload, discard warnings, and delete. Confirm editing does not create a duplicate note.
+
+### Event tests
+
+Verify create, edit, date/time changes, all-day mode, end-time validation, display ordering, save, reload, and delete.
+
+### Milestone tests
+
+Verify the Add Milestone action opens the intended custom modal, creates a milestone associated with the correct goal, updates progress, rejects invalid input, and supports subsequent edits, completion, and deletion.
+
+### Habit tests
+
+Verify all seven individual weekday selections, the Daily and Weekdays presets, custom schedules, validation when no day is selected, historical entries, streak calculation, and backward compatibility with older recurrence data.
+
+### Finance tests
+
+Verify BDT formatting, minor-unit conversion, monthly aggregation, budgets, currency switching, and zero-decimal currency handling.
+
+### Branding and sidebar tests
+
+Verify brand navigation returns to Today within Dō, the logo has an accessible name, emoji replacements are complete in the interface, and the sidebar remains readable and functional across themes and viewport sizes.
+
+### Release tests
+
+Verify:
+
+- Actual generated HTML parses as a classic script.
+- No required external runtime assets or network calls exist.
+- The released application contains all current features.
+- The release archive has the correct version and exact intended files.
+- Historical archives remain unchanged.
+- The displayed download link points to the generated current release.
+- The released HTML and canonical source remain synchronized.
+
+Do not test only duplicated helper functions and assume the interface works.
+
+Use existing lightweight test tools where practical. Do not install a heavyweight testing framework without a demonstrated need.
+
+## 16. Real-browser verification
+
+Test the actual standalone HTML through `file://` wherever the available environment permits.
+
+Also test the development/preview interface that the user actually runs.
+
+Verify:
+
+- Creating and deleting records.
+- Editing a saved note.
+- Editing a saved event.
+- Adding a milestone.
+- Creating a custom habit schedule.
+- Selecting BDT.
+- Returning to Dō Today via the brand logo.
+- Opening and operating confirmation dialogs.
+- Switching themes.
+- Accent-color customization.
+- Sidebar blur and fallback behavior.
+- Mobile drawer behavior.
+- Reload and data persistence.
+- Backup and restore.
+- Keyboard-only workflows.
+- No page-level horizontal overflow.
+- No unexpected console errors.
+
+Report exact browsers and versions tested.
+
+If browser automation fails to initialize, document the failure. Do not count a failed browser launch as a passing UI test.
+
+Mark unavailable browsers as "Not run."
+
+## 17. Documentation and packaging
+
+Update the README to reflect the actual functionality:
+
+- Full CRUD operations.
+- Custom habit weekday selection.
+- BDT finance support.
+- The minimal sun logo.
+- Monochrome icon treatment.
+- The translucent Dō sidebar.
+- Backup/restore and storage behavior.
+- Build and test commands.
+- Actual browser-test results.
+- Current release version and download path.
+
+Preserve the existing MIT license and useful product specifications.
+
+Do not place build-only dependencies, personal backup files, or test fixtures into the user-facing release ZIP.
+
+Generate the correct standalone release HTML and a new versioned ZIP containing only the intended files.
+
+Inspect the actual ZIP contents after packaging.
+
+Do not overwrite v1.0.0, v1.1.0, v1.1.1, v1.1.2, or any later existing release.
+
+## 18. Definition of done
+
+- [ ] All delete buttons work in the actual interface.
+- [ ] Delete confirmation is reliable in embedded previews.
+- [ ] Notes can be edited after saving.
+- [ ] Existing events can be edited.
+- [ ] The Add Milestone button works without native prompts.
+- [ ] Goals and milestones support the required CRUD behavior.
+- [ ] Habits support arbitrary combinations of selected weekdays.
+- [ ] Legacy habit schedules remain valid.
+- [ ] BDT is supported throughout settings, schemas, arithmetic, and formatting.
+- [ ] Currency handling is correct for both two-decimal and zero-decimal currencies.
+- [ ] The logo is a minimal sun-shaped mark.
+- [ ] The brand returns Dō users to Today/Overview.
+- [ ] All interface emojis are replaced by consistent monochrome icons or symbols.
+- [ ] The Dō sidebar has the requested translucent blurred appearance with a readable fallback.
+- [ ] The React preview and standalone app have consistent functionality.
+- [ ] Data validation and storage guarantees are not weakened.
+- [ ] Release links reference the correct version.
+- [ ] All existing and new tests pass after dependencies are installed.
+- [ ] The actual generated artifact has been verified.
+- [ ] Browser-test results accurately reflect what was performed.
+- [ ] The new release ZIP has been inspected.
+- [ ] Historical releases remain unchanged.
+
+If any item cannot be completed or verified, clearly document the limitation and the remaining work.
+
+## 19. Execution and final report
+
+Work in this order:
+
+1. Inspect and reproduce the existing defects.
+2. Repair delete interactions and complete note, event, goal, and milestone CRUD.
+3. Implement custom habit scheduling and BDT.
+4. Add the sun logo, working brand navigation, monochrome icons, and glass sidebar.
+5. Align the preview and standalone application.
+6. Complete data-safety and release-link fixes.
+7. Run automated tests and browser verification.
+8. Generate and inspect the new release package.
+
+Do not stop after a first working-looking screen.
+
+Your final report must state:
+
+- What was changed.
+- Which previously broken interactions were reproduced and fixed.
+- How persistence and data safety were verified.
+- Exact automated test commands and actual results.
+- Browser versions tested and anything not run.
+- Remaining limitations.
+- Exact paths to the updated standalone HTML, README, and release ZIP.
+
+Begin by inspecting the project and implementing the fixes. Do not ask me for clarification.

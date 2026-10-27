@@ -1,0 +1,830 @@
+# DAYLIGHT — MASTER IMPROVEMENT, HARDENING & RELEASE PROMPT
+
+## 1. Your role and mission
+
+You are the senior software architect, product designer, vanilla JavaScript engineer, data-integrity specialist, accessibility reviewer, QA engineer, security reviewer, and release engineer responsible for bringing **Daylight** to a reliable public v1.0 release.
+
+You are working on an existing project, not starting from a blank slate.
+
+Your mission is to inspect, improve, test, document, and package the existing Daylight application. Preserve useful working features and visual design wherever possible. Fix the underlying problems rather than hiding them with superficial UI changes.
+
+**Build and modify the actual project files. Do not merely produce recommendations, a plan, pseudocode, a mockup, or code snippets.**
+
+Work autonomously. Do not ask clarifying questions. Make conservative decisions based on the project specifications and document important decisions and any unresolved limitations.
+
+Your objective is a polished, functional, secure, maintainable, offline-capable personal life dashboard that people can run by downloading a ZIP, extracting it, and double-clicking `index.html`.
+
+## 2. Inputs and source of truth
+
+Inspect the entire available workspace before making changes. It may contain:
+
+- The existing Daylight project ZIP.
+- `Daylight_One_Shot_Master_Prompt.md`.
+- `Daylight_Product_and_Engineering_Specification.md`.
+- A React/TypeScript starter project.
+- One or more standalone HTML builds.
+- Existing tests, scripts, documentation, and release archives.
+
+Locate the actual files and inspect the project structure, production implementation, source code, test suite, current ZIP, and documentation.
+
+Read both specification documents completely when available.
+
+Use this priority order:
+
+1. The non-negotiable requirements of the original Daylight master prompt.
+2. The Daylight Product & Engineering Specification.
+3. The concrete findings and improvement requirements in this prompt.
+4. Existing working product behavior and design, where compatible with the requirements.
+
+When requirements conflict, follow the higher-priority requirement and document the decision.
+
+Do not assume that an existing test, README claim, or prior test result proves the current implementation is correct. Reproduce important findings against the actual source and release artifact.
+
+Before editing, establish a baseline:
+
+- Identify the canonical application implementation.
+- Identify duplicate or conflicting builds.
+- Identify existing runtime dependencies and network references.
+- Inspect all persistence, backup, restore, reset, import, and rendering code.
+- Inspect every module's create, read, update, and delete behavior.
+- Run the existing tests and record the actual results.
+- Identify what is already implemented, what is incomplete, and what is broken.
+
+Preserve useful existing work. Do not blindly replace the application with a simpler prototype.
+
+## 3. Required final deliverables
+
+Produce a clean project containing at least:
+
+```text
+daylight/
+├── index.html
+├── README.md
+├── LICENSE
+├── .gitignore
+├── src/                    # Readable canonical source, if needed
+├── tests/                  # Tests of actual production logic
+├── scripts/                # Reproducible build/release scripts, if needed
+└── releases/               # Optional generated release artifacts
+```
+
+Create a standalone release ZIP with this structure:
+
+```text
+Daylight-v1.0.0/
+├── index.html
+├── README.md
+└── LICENSE                 # Include when appropriate
+```
+
+Use the established release version if the repository has already moved beyond v1.0.0. Do not mislabel an existing newer version as an initial release.
+
+The ZIP must not contain:
+
+- Personal data or real user backups.
+- Developer-only test fixtures.
+- Storage proof-of-concept utilities.
+- Node modules or unnecessary build dependencies.
+- Environment files, API keys, or secrets.
+- Temporary files, duplicate builds, or unrelated starter-project files.
+
+Verify the actual ZIP contents after packaging.
+
+## 4. Non-negotiable product constraints
+
+The released application must:
+
+1. Open directly by double-clicking `index.html`.
+2. Require no installation, server, hosting, account, command line, or internet connection for core use.
+3. Use one canonical application state for Zen and Dō.
+4. Keep all runtime HTML, CSS, JavaScript, and icons inside the release HTML.
+5. Use vanilla JavaScript, HTML, CSS, system fonts, and inline SVG/CSS icons.
+6. Make no required external runtime requests or downloads.
+7. Include no ads, analytics, telemetry, cloud synchronization, authentication, or data transmission.
+8. Support system, light, and dark themes.
+9. Work on mobile, tablet, and desktop layouts without horizontal overflow.
+10. Centralize all persistence operations in one storage/data service.
+11. Validate all data before committing it to storage.
+12. Never report a successful save, import, restore, or reset unless the operation actually succeeded.
+13. Never silently discard, reset, or overwrite malformed or potentially recoverable data.
+14. Include versioned JSON backup export and validated restore.
+15. Retain the calm, restrained visual identity of Daylight.
+
+Do not introduce React, a framework, third-party runtime packages, or a network-dependent service into the release merely to simplify implementation.
+
+Build-time tools are allowed when necessary, but the end-user must never need them.
+
+## 5. Priority Zero: Data safety and storage integrity
+
+This is the first and most important workstream.
+
+### 5.1 Make restore transactional
+
+Inspect the actual restore implementation and fix its commit order.
+
+A restore must follow this sequence:
+
+1. Read the selected file safely.
+2. Parse its JSON.
+3. Validate the complete schema.
+4. Validate all records, IDs, dates, enumerations, and relationships.
+5. Migrate only explicitly supported older schemas.
+6. Validate the migrated result again.
+7. Show a preview of the data to be restored.
+8. Explain that restoring replaces the current dataset.
+9. Obtain explicit user confirmation.
+10. Attempt to persist the validated candidate snapshot.
+11. Only after a successful commit, replace the canonical in-memory application state.
+12. Re-render all views and show truthful success feedback.
+
+**If persistence fails, retain the existing canonical state and report the failure.**
+
+Do not partially change the application before a failed write.
+
+Do not display “Backup restored successfully” if the data exists only in an uncommitted state.
+
+The same transaction-first principle must be applied to reset operations and any other destructive operation that replaces the entire dataset.
+
+### 5.2 Centralize and harden the storage adapter
+
+All browser storage reads, writes, and removals must pass through a single storage adapter.
+
+Provide equivalent responsibilities to:
+
+- `load()`
+- `save(candidateState)`
+- `getStatus()`
+- `validateImport(parsedData)`
+- `exportSnapshot()`
+- `restore(validatedData)`
+- `migrate(oldData)`
+- `exportRawRecoveryData()`
+
+Function names may differ, but the responsibilities must remain clear and centralized.
+
+At startup:
+
+1. Probe actual storage access using a dedicated temporary key.
+2. Test writing, reading, and removing that key.
+3. Never overwrite the application data during the probe.
+4. Load and validate the stored state.
+5. Initialize a valid empty state only when there is genuinely no saved payload.
+6. Preserve and recover malformed, inaccessible, or unsupported existing data without replacing it automatically.
+
+Support three explicit states:
+
+**Persistent mode:** Storage is available and the latest save succeeded.
+
+**Temporary mode:** Persistent storage is unavailable or a write failed. Any unsaved changes must remain visibly identified as potentially lost.
+
+**Recovery mode:** Existing data cannot safely be parsed, validated, or loaded. Prevent normal use from accidentally overwriting it. Provide recovery instructions, raw-data export where possible, and a validated backup-restore route.
+
+Keep degraded-storage warnings visible until persistence is successfully recovered or the user deliberately leaves the affected workflow.
+
+Never imply that temporary changes will survive reopening the app.
+
+### 5.3 Handle storage failures
+
+Test and handle:
+
+- Access denied.
+- Browser storage unavailable.
+- Quota exceeded.
+- Serialization errors.
+- Malformed stored JSON.
+- Missing or invalid schema fields.
+- Unsupported newer schema versions.
+- Migration failures.
+- Failed import writes.
+- Failed reset writes.
+
+Retain the last-known-good in-memory state when feasible.
+
+Do not automatically replace invalid saved data with defaults.
+
+Exporting the original raw stored payload must not mutate the original payload.
+
+A successful storage probe does not prove that data is portable across browser versions, profiles, or file locations. Document that distinction.
+
+### 5.4 Make reset safe
+
+Reset must be a clearly worded destructive operation.
+
+Require explicit confirmation. Provide an opportunity to export a backup first.
+
+Attempt to commit the new empty state before changing the canonical in-memory state. If that write fails, preserve the existing application state and explain the failure.
+
+Never reset the application automatically because loading, import, or validation failed.
+
+## 6. Priority One: Strict data validation and integrity
+
+Create a complete, documented schema for every supported collection.
+
+Validate at least:
+
+- `schemaVersion`
+- Preferences.
+- Tasks.
+- Projects.
+- Events.
+- Habits.
+- Habit entries.
+- Goals.
+- Milestones.
+- Notes.
+- Journal entries.
+- Finance transactions.
+- Budgets.
+
+For every entity, validate all required fields and applicable optional fields, types, unique IDs, date formats, enumerations, and relationship references.
+
+Enforce the following rules:
+
+- IDs are stable, nonempty, and unique within their collections.
+- Task priorities use supported enum values.
+- Task parent references point to valid tasks.
+- A task cannot be its own parent.
+- Subtask cycles are prohibited.
+- Project references point to valid projects.
+- Goal and milestone references are valid.
+- Linked task references are cleaned up predictably on deletion.
+- Habit entries reference existing habits and valid local dates.
+- Event start and end ordering is valid.
+- Transaction amounts are positive integers in the chosen currency's minor units.
+- Currency codes must be supported values.
+- Budget values and categories are validated.
+- Date-only fields strictly match `YYYY-MM-DD` and represent real calendar dates.
+
+Use explicit schema migrations. Reject unsupported future versions instead of trying to interpret them as the current schema.
+
+Do not silently accept malformed objects, duplicate IDs, invalid references, or invalid enumerations.
+
+Preserve unknown optional fields where safe, or document the deliberate normalization and stripping behavior.
+
+Keep derived information, such as project task counts and goal progress percentages, derived from canonical records instead of storing stale duplicate facts.
+
+Add validation tests for duplicates, malformed entities, invalid references, and cyclic relationships.
+
+## 7. Priority One: Eliminate unsafe user-content rendering
+
+Audit the entire production application, especially all uses of:
+
+- `innerHTML`
+- `outerHTML`
+- `insertAdjacentHTML`
+- Dynamic element attributes.
+- Inline event-handler attributes.
+- Select-option values.
+- CSS selector construction.
+- Imported IDs and preference values.
+- User-entered titles, descriptions, notes, journal entries, and transaction notes.
+
+Treat imported JSON as untrusted input.
+
+Prefer `document.createElement()`, `textContent`, and safe DOM operations when constructing the interface.
+
+Do not interpolate user-controlled strings or imported values into HTML markup, attributes, or executable event-handler contexts.
+
+Do not assume that escaping a title makes the other properties of that record safe.
+
+Validate all values before using them in selectors, classes, attributes, or application logic.
+
+Avoid `eval`, dynamic code execution, and unnecessary inline event handlers.
+
+Do not render user-written notes or journal entries as HTML.
+
+A malicious backup must not be able to inject executable markup into the local app.
+
+Add tests or focused verification for HTML-like input, event-handler-like text, unusual identifiers, unexpected enums, and maliciously crafted imported records.
+
+The application's own code must never log complete personal records.
+
+## 8. Priority Two: Restore feature completeness
+
+Review every existing feature against the original specification. Keep functioning features and fix the missing or incorrect behavior.
+
+### 8.1 Tasks and subtasks
+
+Implement reliable:
+
+- Create, edit, complete, reopen, and delete.
+- Today, Upcoming, All, and Completed views.
+- Search and filtering where already supported.
+- Priority and due date handling.
+- Project association.
+- Top-priority selection.
+- Parent and child relationships.
+
+Fix the task renderer so it handles nested subtasks recursively rather than only displaying a fixed number of levels.
+
+Ensure every appropriate filter returns the correct descendants and does not hide tasks unexpectedly.
+
+Validate parent changes to prevent cycles.
+
+When deleting a parent task, explicitly let the user choose whether to delete its subtasks or preserve them as independent tasks.
+
+Ensure task completion does not delete the task.
+
+All task changes must be reflected in both Zen and Dō.
+
+### 8.2 Projects
+
+Ensure users can create, edit, archive, unarchive, and delete projects.
+
+Show associated tasks and derived completed-versus-total counts.
+
+When deleting a project, confirm the operation and explain that associated tasks will remain but become unassigned.
+
+Do not delete unrelated tasks.
+
+### 8.3 Calendar and events
+
+Support event creation, viewing, editing, and deletion, including all-day events and timed events.
+
+Clearly distinguish:
+
+- Date-only values stored as `YYYY-MM-DD`.
+- Actual moments stored as ISO 8601 timestamps.
+
+Use consistent time-zone semantics.
+
+Validate end times against start times.
+
+Show upcoming events chronologically and handle month/year boundaries correctly.
+
+Test local date conversion, time zones, and daylight-saving transitions where the environment allows.
+
+Provide a clear empty state. Do not imply that external calendars are synchronized.
+
+### 8.4 Habits
+
+Support creating, editing, pausing, resuming, archiving, and deleting habits.
+
+Support daily and selected-weekday recurrence.
+
+Store entries separately by habit ID and local date.
+
+Allow users to complete or undo today's habit and edit historical entries.
+
+Calculate streaks and completion summaries from recurrence rules and recorded entries.
+
+Do not count unscheduled days as failures.
+
+Confirm habit deletion and correctly handle its associated entries.
+
+Avoid punitive visuals or shaming language.
+
+### 8.5 Goals and milestones
+
+Support goal creation, editing, deletion, completion, pausing, and resuming.
+
+Support milestone creation, editing, deletion, and completion/reopening.
+
+Derive progress from completed milestones divided by total milestones.
+
+When there are no milestones, show the goal's status instead of inventing a percentage.
+
+Validate linked tasks and clean up references when a task is deleted.
+
+Confirm deletion of goals and explain that their milestones will be removed while tasks remain.
+
+Add confirmation before milestone deletion as well.
+
+### 8.6 Notes and journal
+
+Notes must support create, view, edit, delete, pin/unpin, and case-insensitive search by title and body.
+
+Sort pinned notes first, then by update time.
+
+Warn about unsaved changes before closing a note editor.
+
+Journal entries must be distinct from notes and support create, view, edit, delete, and chronological browsing.
+
+Allow multiple journal entries on the same date, following the existing specification.
+
+Render all text safely.
+
+### 8.7 Finance
+
+Finance remains optional and manual only. Never connect it to bank accounts or financial services.
+
+Ensure transactions support:
+
+- Create.
+- View.
+- Edit.
+- Delete.
+- Month filtering.
+- Category filtering.
+- Income and expense totals.
+- Net total.
+- Expense totals by category.
+- Optional monthly budgets.
+
+Inspect the existing implementation for a missing transaction edit flow and implement it if absent.
+
+Use integer minor units for transaction arithmetic.
+
+Do not hardcode division by 100 or force every currency to two decimal places. Make the conversion between user-entered decimal amounts, integer minor units, and displayed amounts currency-aware.
+
+Use a supported currency selection and suitable `Intl.NumberFormat` formatting.
+
+Parse decimal inputs carefully to avoid floating-point rounding errors.
+
+Validate positive amounts, dates, categories, and budget values.
+
+Display a clear notice that transactions are entered manually and are not bank-synced.
+
+### 8.8 Today and Zen
+
+Zen must remain a calm daily overview containing:
+
+- Friendly greeting and local date.
+- Up to three selected top priorities.
+- Today's tasks.
+- Next upcoming event.
+- Today's habit summary.
+- Quick task and note capture.
+- Clear Zen/Dō switching.
+- Access to settings and backup.
+
+Dō must remain the expanded management view with access to all ten modules:
+
+1. Today.
+2. Tasks.
+3. Projects.
+4. Calendar and agenda.
+5. Habits.
+6. Goals and milestones.
+7. Notes.
+8. Journal.
+9. Finance.
+10. Settings and data management.
+
+Both views must share the same canonical state. Switching views must never duplicate, reset, or transform user records.
+
+Preserve the minimalist Daylight visual identity. Do not add unnecessary charts, gradients, decorative widgets, or extra navigation complexity.
+
+## 9. Priority Two: Accessibility and visual refinement
+
+Improve the existing design rather than rebuilding it unnecessarily.
+
+Keep the warm off-white background, restrained sage accent, charcoal text, clean surfaces, system typography, generous whitespace, and subtle borders.
+
+### 9.1 Contrast
+
+Audit both themes using actual contrast calculations.
+
+Aim for WCAG AA contrast:
+
+- At least 4.5:1 for ordinary text.
+- At least 3:1 for large text.
+- At least 3:1 for relevant visual UI components and focus indicators.
+
+Pay particular attention to muted text, text on sage-colored buttons, disabled controls, borders, form hints, selected navigation items, and error messages.
+
+Do not use color as the only indication of completion, errors, priorities, or persistence status.
+
+### 9.2 Dialogs and keyboard access
+
+Audit every dialog and modal.
+
+Provide:
+
+- Meaningful accessible dialog titles.
+- Correct dialog semantics.
+- Initial focus in the appropriate location.
+- Focus containment while a modal is open.
+- Escape handling where appropriate.
+- Focus restoration when the modal closes.
+- Removal of temporary keyboard listeners.
+- Safe handling of unsaved edits.
+- Confirmation for destructive actions.
+
+Use native semantic elements and proper form labels.
+
+Ensure every control is reachable and operable using the keyboard, including navigation, filters, forms, and record actions.
+
+Give icon-only buttons accessible names.
+
+Provide visible focus indicators in both themes.
+
+Use suitable live regions for important save failures, validation messages, and status changes.
+
+Avoid hover-only interactions.
+
+### 9.3 Responsive behavior
+
+Inspect the actual interface at mobile, tablet, and desktop sizes.
+
+Check:
+
+- Narrow-screen navigation.
+- Task and form layouts.
+- Dialog sizing.
+- Calendar cells.
+- Finance summaries.
+- Long titles and descriptions.
+- Overflowing buttons.
+- Touch targets.
+- Text scaling.
+
+Prevent page-level horizontal scrolling and clipped dialogs.
+
+Respect `prefers-reduced-motion`.
+
+Use modest, consistent transitions only.
+
+## 10. Priority Three: Establish one canonical source and reproducible builds
+
+Inspect the existing React/TypeScript implementation, standalone HTML files, Vite setup, dependencies, build scripts, and copies of generated HTML.
+
+Resolve conflicting implementations deliberately.
+
+The original product requirements call for a plain HTML/CSS/vanilla JavaScript runtime. Therefore, make the production application follow that requirement.
+
+Choose one canonical source of application logic. Prefer readable vanilla source modules and a small deterministic developer-time build process that bundles the production HTML.
+
+If existing React or starter-project code contains useful functionality, preserve or migrate the useful behavior before removing or sidelining it.
+
+Do not keep multiple independently editable versions of the app that can silently diverge.
+
+Do not test one implementation while shipping another.
+
+The build must produce the actual self-contained `index.html` with inline style and script assets, no runtime framework requirement, no external files, and no file-dependent module imports.
+
+Share production validation and business logic with automated tests wherever practical. Do not create separate test-only copies of the implementation and treat them as proof that production works.
+
+The build must be repeatable from a documented command.
+
+After building, verify that the release HTML is up to date and that the production source matches the tested code.
+
+## 11. Remove unrelated starter-project dependencies and confusion
+
+Inspect for Google AI Studio starter instructions, Gemini API references, API-key requirements, unused package dependencies, and unrelated templates.
+
+The Daylight product does not require AI capabilities or an external API.
+
+Remove unrelated runtime dependencies and misleading setup requirements when they are not needed for a documented development task.
+
+Do not require API keys, secrets, or `.env` files for the release.
+
+Keep development tooling only when it serves a real, documented purpose.
+
+Update the root README so it describes Daylight accurately rather than an unrelated starter project.
+
+Maintain a clear separation between end-user files and developer-only tools.
+
+Keep storage proof-of-concept pages and developer fixtures out of the production release ZIP.
+
+Inspect all duplicate application files. Generate duplicate outputs from the canonical source instead of manually synchronizing them.
+
+Do not delete unrelated work blindly. Document necessary removals and retain legitimate development assets where appropriate.
+
+## 12. Priority Three: Production-level automated testing
+
+Strengthen the test suite so it tests the actual production logic.
+
+The existing eight passing Node tests are useful baseline evidence, but they are not sufficient if they test helper implementations copied separately from the shipped application.
+
+### 12.1 Data integrity tests
+
+Test:
+
+- Empty first launch.
+- Valid stored-state loading.
+- Valid saves.
+- Duplicate IDs.
+- Invalid enumerations.
+- Malformed dates.
+- Invalid amounts.
+- Missing required fields.
+- Invalid relationships.
+- Subtask cycles.
+- Unknown newer schema versions.
+- Supported schema migrations.
+- Relationship cleanup after deletion.
+- Date-only values at month/year boundaries.
+
+### 12.2 Persistence and recovery tests
+
+Simulate storage operations that fail.
+
+Test:
+
+- Access denied.
+- Storage unavailable.
+- Write failure.
+- Quota errors.
+- Malformed stored JSON.
+- Raw-data preservation.
+- Recovery export.
+- Unsupported schemas.
+- Failed restore writes.
+- Failed reset writes.
+- Temporary-mode warnings.
+- No false save-success messages.
+
+Confirm that a failed operation never replaces the last-known-good canonical state.
+
+### 12.3 Backup and restore tests
+
+Test:
+
+1. Exporting a complete valid snapshot.
+2. Parsing the exported JSON.
+3. Preserving all supported record collections and preferences.
+4. Rejecting malformed imports.
+5. Rejecting unsupported newer schema versions.
+6. Rejecting duplicate IDs and broken references.
+7. Previewing valid imports before replacement.
+8. Requiring explicit confirmation.
+9. Leaving current data untouched when validation or storage fails.
+10. Restoring and verifying the exact expected record counts and relationships.
+11. Ensuring restoration cannot execute imported HTML or attributes.
+
+### 12.4 Feature behavior tests
+
+Cover task filtering, nested subtasks, task completion, project associations, event ordering, all-day events, habit recurrence, historical habit entries, goal and milestone progress, note pinning/search, journal chronology, transaction editing, currency arithmetic, monthly finance filters, themes, preferences, and reset confirmation.
+
+### 12.5 Build and static checks
+
+Verify that:
+
+- The production HTML exists.
+- HTML, CSS, and JavaScript are embedded locally.
+- No external runtime scripts, styles, fonts, images, or API dependencies exist.
+- No production network calls are present.
+- No file-dependent module imports or `fetch()` calls are required.
+- No unexpected console errors occur during available tests.
+- All required release files exist.
+- The generated ZIP has the correct structure.
+
+Use existing lightweight tools where practical. Do not install a heavyweight browser automation stack without a demonstrated need.
+
+Do not claim a test passed unless it was actually executed.
+
+## 13. Real-browser acceptance testing
+
+Where browsers or suitable automation tools are available, test the actual generated release `index.html` through the intended `file://` workflow.
+
+Do not rely solely on a development server.
+
+Test current desktop versions of:
+
+- Google Chrome.
+- Microsoft Edge.
+- Mozilla Firefox.
+- Apple Safari, where available.
+
+For each browser actually tested, record the version and results.
+
+At minimum verify:
+
+- First launch.
+- Creating and editing a record.
+- Saving and reloading.
+- Closing and reopening the application.
+- Switching between Zen and Dō.
+- Theme switching.
+- Exporting and restoring a backup.
+- Failed restore protection.
+- Malformed-data recovery.
+- Mobile-sized and desktop-sized layouts.
+- Keyboard navigation and dialog behavior.
+- No horizontal page overflow.
+- Offline core functionality.
+
+Also test file relocation or renaming if the environment permits.
+
+**If a browser is not available, explicitly mark the relevant tests as “Not run.”**
+
+Do not infer browser compatibility from code inspection or successful Node tests.
+
+Do not claim browser storage will always survive file relocation, browser updates, profile changes, or browser-data clearing.
+
+Document real results without exaggeration.
+
+## 14. Documentation and license
+
+Rewrite `README.md` as a complete user-facing and contributor-facing guide.
+
+Include:
+
+- What Daylight is.
+- Zen versus Dō.
+- Key modules and capabilities.
+- Download and extract instructions.
+- How to double-click `index.html`.
+- The absence of a required server or account.
+- Offline and privacy behavior.
+- How to export and restore backups.
+- How recovery mode works.
+- Storage limitations with `file://`.
+- The consequences of clearing browser data or changing profiles and file locations.
+- The fact that local browser storage and backups are not encrypted by default.
+- Tested browser versions and honest test results.
+- Known limitations.
+- How to run automated tests.
+- How to build and package the standalone release.
+
+Do not include false compatibility claims or outdated starter-project setup instructions.
+
+Preserve an existing legitimate license. If there is no license, add the MIT License with copyright holder `Daylight contributors` and the current year. Document this default choice so it can be changed before publication.
+
+Update `.gitignore` to exclude editor and OS artifacts, temporary builds, personal data, local backups, environment files, and test output without excluding the production `index.html`.
+
+## 15. Execution strategy
+
+Work in the following order.
+
+### Phase A — Inspect and establish a baseline
+
+Read the specifications, inspect all source files and ZIP contents, run existing tests, identify the actual production implementation, and record verified findings.
+
+### Phase B — Protect user data
+
+Fix transactional restore, transactional reset, data validation, storage failures, recovery behavior, and unsafe rendering.
+
+Do not move on while the data-integrity implementation is obviously unsafe.
+
+### Phase C — Complete core functionality
+
+Fix nested subtasks, missing transaction editing, currency handling, calendar boundaries, milestone confirmations, and other verified gaps against the original specification.
+
+### Phase D — Establish the canonical build
+
+Resolve duplicate app implementations, remove unrelated starter-project requirements, create a deterministic production build, and ensure the output remains self-contained.
+
+### Phase E — Accessibility and UX
+
+Improve contrast, dialog focus behavior, keyboard support, status messaging, mobile layout, and reduced-motion support while maintaining the existing product personality.
+
+### Phase F — Test and verify
+
+Run the full automated suite. Test the actual generated artifact. Perform available browser, accessibility, offline, persistence, import, and export checks.
+
+Fix failures discovered during testing.
+
+### Phase G — Document and package
+
+Write the accurate README, maintain the license, update `.gitignore`, create a clean release ZIP, and verify its contents.
+
+Do not stop after producing a plan or a first working-looking screen. Continue until the available implementation and verification work is complete.
+
+## 16. Definition of done
+
+The task is complete when every applicable item has been addressed.
+
+- [ ] Existing source and specifications were inspected.
+- [ ] Useful existing functionality was preserved.
+- [ ] One canonical source of application logic exists.
+- [ ] The standalone release HTML is generated reproducibly.
+- [ ] Core features work without network access.
+- [ ] Zen and Dō use shared application state.
+- [ ] Restore is transactional.
+- [ ] Reset is protected and transactional.
+- [ ] Storage errors do not produce false success.
+- [ ] Malformed data is not silently overwritten.
+- [ ] Recovery mode preserves potentially recoverable data.
+- [ ] Schema validation covers every supported collection.
+- [ ] Duplicate IDs, invalid dates, broken references, and cycles are rejected.
+- [ ] Imported content cannot inject executable markup.
+- [ ] Nested subtasks render correctly.
+- [ ] Finance supports transaction editing.
+- [ ] Currency arithmetic uses the correct minor-unit scale.
+- [ ] Calendar date/time rules are consistent.
+- [ ] Destructive actions have appropriate confirmations.
+- [ ] Keyboard navigation and dialog behavior are improved.
+- [ ] Contrast has been measured and corrected where needed.
+- [ ] Responsive behavior has been tested where possible.
+- [ ] Tests exercise production logic rather than duplicated helper code.
+- [ ] All available automated tests pass.
+- [ ] Unavailable tests are accurately marked as not run.
+- [ ] The README accurately explains storage, privacy, backup, and limitations.
+- [ ] The release ZIP contains the intended files only.
+- [ ] The actual ZIP has been inspected after generation.
+- [ ] No secrets, personal user data, or unrelated starter-project instructions remain in the release.
+
+If an item cannot be completed in the available environment, document the exact limitation and the remaining work. Never claim completion without evidence.
+
+## 17. Final report
+
+When the implementation is complete, provide a concise, factual engineering report containing:
+
+1. **What changed:** the most important fixes and improvements.
+2. **Data safety:** how restore, reset, validation, and recovery now behave.
+3. **Features:** what was fixed or completed.
+4. **Architecture:** the canonical source and release build process.
+5. **Tests:** exact test commands, actual results, and the number of tests passed or failed.
+6. **Browser matrix:** browsers and versions actually tested; explicitly identify tests not run.
+7. **Known limitations:** anything remaining incomplete or unverified.
+8. **Release artifacts:** exact paths to the production HTML, README, source, and ZIP.
+9. **License:** confirm whether the existing license was preserved or the default MIT license was added.
+10. **Release readiness:** give an honest assessment based on the evidence collected.
+
+Link to the actual release ZIP and standalone `index.html` when the environment supports direct artifact links.
+
+The highest priority is protecting user data and shipping the implementation that was actually tested.
+
+**Begin by inspecting the real project in the current workspace. Then implement, verify, document, and package the improvements without asking me for clarification.**

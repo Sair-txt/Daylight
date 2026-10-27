@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daylight — Storage Proof of Concept</title>
+  <style>
+    :root {
+      --bg: #F5F4F0;
+      --surface: #FFFFFF;
+      --text: #292A28;
+      --text-muted: #777771;
+      --border: #E8E6DF;
+      --accent: #718675;
+      --accent-hover: #5d7061;
+      --danger: #b33939;
+      --success: #2e7d32;
+      --warning: #d97706;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161716;
+        --surface: #202220;
+        --text: #EBEBE6;
+        --text-muted: #9E9E96;
+        --border: #333532;
+        --accent: #8FA893;
+        --accent-hover: #a5bca9;
+        --danger: #e57373;
+        --success: #81c784;
+        --warning: #fbbf24;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 680px;
+      width: 100%;
+      padding: 2rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p.subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .status-persistent { background: rgba(46, 125, 50, 0.12); color: var(--success); }
+    .status-memory { background: rgba(217, 119, 6, 0.12); color: var(--warning); }
+    .status-error { background: rgba(179, 57, 57, 0.12); color: var(--danger); }
+    .field { margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text-muted); }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+    button {
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      transition: all 0.15s ease;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    button.primary:hover { background: var(--accent-hover); }
+    button.danger { color: var(--danger); }
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin-top: 1rem;
+      max-height: 200px;
+    }
+    .log-msg { font-size: 0.85rem; margin-top: 0.75rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Daylight Storage Proof of Concept</h1>
+    <p class="subtitle">Verifies file:// storage adapter, safe probe, reload persistence, JSON export, and import.</p>
+    
+    <div id="statusBadge" class="status-badge">Detecting storage...</div>
+
+    <div class="field">
+      <label for="testTitle">Test Record Title</label>
+      <input type="text" id="testTitle" placeholder="e.g. My first Daylight note">
+    </div>
+
+    <div class="field">
+      <label for="testContent">Test Record Content</label>
+      <textarea id="testContent" rows="3" placeholder="Enter text to persist across reloads..."></textarea>
+    </div>
+
+    <div class="btn-group">
+      <button class="primary" id="btnSave">Save Record</button>
+      <button id="btnReload">Reload from Storage</button>
+      <button id="btnExport">Export JSON</button>
+      <button id="btnCorrupt" class="danger">Simulate Malformed Storage</button>
+      <button id="btnClear" class="danger">Clear Test Storage</button>
+    </div>
+
+    <input type="file" id="importInput" accept=".json" style="display:none">
+    <div class="btn-group" style="margin-top:0.75rem;">
+      <button id="btnImport">Import Test JSON</button>
+    </div>
+
+    <div id="logArea" class="log-msg">Ready.</div>
+    <pre id="jsonPreview">{}</pre>
+  </div>
+
+  <script>
+    (function() {
+      const STORAGE_KEY = 'daylight.poc.v1';
+      const PROBE_KEY = 'daylight.__storage_probe__';
+      
+      let storageAvailable = false;
+      let memoryState = { title: 'Default Title', content: 'Testing offline storage', updatedAt: new Date().toISOString() };
+
+      const statusBadge = document.getElementById('statusBadge');
+      const testTitle = document.getElementById('testTitle');
+      const testContent = document.getElementById('testContent');
+      const logArea = document.getElementById('logArea');
+      const jsonPreview = document.getElementById('jsonPreview');
+
+      function probeStorage() {
+        try {
+          const testVal = 'probe_' + Date.now();
+          localStorage.setItem(PROBE_KEY, testVal);
+          const retrieved = localStorage.getItem(PROBE_KEY);
+          localStorage.removeItem(PROBE_KEY);
+          return retrieved === testVal;
+        } catch (e) {
+          console.warn('Storage probe failed:', e);
+          return false;
+        }
+      }
+
+      function updateStatus() {
+        if (storageAvailable) {
+          statusBadge.textContent = 'Storage Status: Persistent (localStorage active)';
+          statusBadge.className = 'status-badge status-persistent';
+        } else {
+          statusBadge.textContent = 'Storage Status: Memory-Only (Warning: Changes lost on close)';
+          statusBadge.className = 'status-badge status-memory';
+        }
+      }
+
+      function log(msg) {
+        logArea.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      }
+
+      function updateUI() {
+        testTitle.value = memoryState.title || '';
+        testContent.value = memoryState.content || '';
+        jsonPreview.textContent = JSON.stringify(memoryState, null, 2);
+      }
+
+      function loadData() {
+        if (!storageAvailable) {
+          log('Loaded initial in-memory data (storage disabled).');
+          updateUI();
+          return;
+        }
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            log('No saved record found. Initialized default state.');
+            updateUI();
+            return;
+          }
+          const parsed = JSON.parse(raw);
+          if (typeof parsed !== 'object' || parsed === null) throw new Error('Malformed payload');
+          memoryState = parsed;
+          log('Successfully loaded record from storage.');
+          updateUI();
+        } catch (err) {
+          statusBadge.textContent = 'Storage Status: Recovery Mode (Data Corrupted)';
+          statusBadge.className = 'status-badge status-error';
+          log('Error reading storage: ' + err.message + '. Preserving raw value without overwriting.');
+        }
+      }
+
+      function saveData() {
+        memoryState.title = testTitle.value.trim();
+        memoryState.content = testContent.value.trim();
+        memoryState.updatedAt = new Date().toISOString();
+
+        if (!storageAvailable) {
+          log('Saved to memory only. Will be lost when tab closes.');
+          updateUI();
+          return;
+        }
+
+        try {
+          const serialized = JSON.stringify(memoryState);
+          localStorage.setItem(STORAGE_KEY, serialized);
+          log('Successfully saved to persistent storage.');
+          updateStatus();
+          updateUI();
+        } catch (err) {
+          log('Save failed: ' + err.message);
+          statusBadge.textContent = 'Save Failed (Write error)';
+          statusBadge.className = 'status-badge status-error';
+        }
+      }
+
+      // Initialize
+      storageAvailable = probeStorage();
+      updateStatus();
+      loadData();
+
+      document.getElementById('btnSave').addEventListener('click', saveData);
+      document.getElementById('btnReload').addEventListener('click', () => {
+        loadData();
+      });
+      document.getElementById('btnExport').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(memoryState, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'daylight-poc-backup.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        log('Exported JSON backup successfully.');
+      });
+      document.getElementById('btnCorrupt').addEventListener('click', () => {
+        if (!confirm('Corrupt localStorage to test recovery mode?')) return;
+        localStorage.setItem(STORAGE_KEY, '{ invalid_json: ... [');
+        log('Corrupted storage with invalid JSON. Click Reload to test recovery mode.');
+      });
+      document.getElementById('btnClear').addEventListener('click', () => {
+        if (!confirm('Clear test storage?')) return;
+        localStorage.removeItem(STORAGE_KEY);
+        memoryState = { title: '', content: '', updatedAt: new Date().toISOString() };
+        log('Cleared test storage.');
+        updateUI();
+      });
+
+      const fileInput = document.getElementById('importInput');
+      document.getElementById('btnImport').addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const parsed = JSON.parse(evt.target.result);
+            if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON structure');
+            if (confirm('Import data and overwrite current state?')) {
+              memoryState = parsed;
+              saveData();
+              log('Imported record successfully.');
+            }
+          } catch (err) {
+            alert('Import error: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      });
+    })();
+  </script>
+</body>
+</html>
